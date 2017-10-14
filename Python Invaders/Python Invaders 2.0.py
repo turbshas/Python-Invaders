@@ -8,7 +8,16 @@ This program is a remake of Space Invaders rewritten in Python for the culminati
 '''
 
 # Import libraries
-import pygame,os,random,time
+import Alien
+import Colours
+import Entity
+import Missile
+import os
+import PlayerEntity
+import pygame
+import random
+import time
+import UFO
 
 # Display the controls and rules in the python shell at startup
 print("""Welcome to Python Invaders, a recreation of the Space Invaders video game in Python!
@@ -28,9 +37,6 @@ The game will end when you have run out of lives, or when you quit the game! Enj
 pygame.init()
 
 #------Define Lists------
-# List of sprites, in order of row starting from the top
-SPRITES = [os.path.join('python invaders images','small_invader1.png'),os.path.join('python invaders images','medium_invader1.png'),os.path.join('python invaders images','medium_invader1.png'),os.path.join('python invaders images','large_invader1.png'),os.path.join('python invaders images','large_invader1.png')]
-ALTERNATE_SPRITES = [os.path.join('python invaders images','small_invader2.png'),os.path.join('python invaders images','medium_invader2.png'),os.path.join('python invaders images','medium_invader2.png'),os.path.join('python invaders images','large_invader2.png'),os.path.join('python invaders images','large_invader2.png')]
 # Columns of aliens used to determine which aliens can shoot
 column1 = []
 column2 = []
@@ -44,14 +50,8 @@ column9 = []
 column10 = []
 column11 = []
 column_list = [column1,column2,column3,column4,column5,column6,column7,column8,column9,column10,column11]
-# List of sprites for the alien missiles
-ALIEN_MISSILE_SPRITES_A = [os.path.join('python invaders images','alien_missile1A.png'),os.path.join('python invaders images','alien_missile2A.png')]
-ALIEN_MISSILE_SPRITES_B = [os.path.join('python invaders images','alien_missile1B.png'),os.path.join('python invaders images','alien_missile2B.png')]
-# List of barrier sprites
-BARRIER_SPRITES = [os.path.join('python invaders images','barrier_stage0.png'),os.path.join('python invaders images','barrier_stage1.png'),os.path.join('python invaders images','barrier_stage2.png'),os.path.join('python invaders images','barrier_stage3.png')]
+
 # List of point values for each row
-ALIEN_POINTS = [40,20,20,10,10]
-UFO_POINTS = [50,100,150,200,250,300]
 # List that will be used to contain aliens that have been hit by a missile
 alien_hit = []
 #------------------------
@@ -66,22 +66,10 @@ WINDOW_SIZE = (width,height)
 FPS = 60 # How many times the game updates per second
 
 # UFO Specifications
-ufo_spawned = False # Variable to determine whether to spawn the UFO or not
-UFO_SPRITE = os.path.join('python invaders images','ufo.png') # The ufo's bitmapped sprite
-UFO_WIDTH = 48
-UFO_HEIGHT = 21
-ufo_start_x = 0 - UFO_WIDTH # This will place the ufo offscreen at the beginning and will start the ufo on the side it left
-ufo_speed = 1 # The speed of the ufo, in pixels/tick
+ufo_start_x = 0 - UFO.UFO_WIDTH # This will place the ufo offscreen at the beginning and will start the ufo on the side it left
 
 # Specifications of aliens
-ALIEN_WIDTH = [16,22,22,24,24] # This list holds the width of the aliens in each row, e.g. aliens in row 1 are width 16 pixels, aliens in row 2 are 22 pixels etc.
-ALIEN_FAKE_WIDTH = 24 # This is the width of the largest alien. It is used to make sure all the aliens line up vertically
-ALIEN_HEIGHT = 16 # All of the aliens are 16 pixels tall
-ALIEN_SPACING = 10
-NUM_ALIENS = 11 # This is number of aliens per row
-NUM_ROWS = 5 # The number of rows of aliens
-ALIEN_SHOOT_CHANCE = 900 # 1/ALIEN_SHOOT_CHANCE the aliens will shoot at the player
-current_sprites = SPRITES # Determines which sprite is currently being used for the aliens
+current_sprites = Alien.SPRITES # Determines which sprite is currently being used for the aliens
 # How fast the aliens will move, in pixels per second
 alien_x_change = 10
 # Same for y coordinate
@@ -89,13 +77,10 @@ alien_y_shift = 0
 alien_y_change = 16 # 16 is the height of the aliens
 
 # Offset amount is used so aliens start in the middle of the screen
-X_OFFSET = (width - ((ALIEN_FAKE_WIDTH * NUM_ALIENS) + (ALIEN_SPACING * (NUM_ALIENS - 1)))) / 2
+X_OFFSET = (width - ((ALIEN_MAX_WIDTH * NUM_ALIENS) + (ALIEN_SPACING * (NUM_ALIENS - 1)))) / 2
 Y_OFFSET = (height - ((ALIEN_HEIGHT * NUM_ROWS) + (ALIEN_SPACING * (NUM_ROWS - 1)))) / 4
 
 # Player specifications
-PLAYER_WIDTH = 60
-PLAYER_HEIGHT = 28
-PLAYER_SPRITE = os.path.join('python invaders images','core_cannon.png')
 player_x_change = 0 # How fast/which direction the player sprite moves. Default is 0, value changes when the user presses a key
 player_lives = 3
 # Variables used to determine how fast/ where a player character should be moving
@@ -107,13 +92,7 @@ score = 0
 # The barriers have been omitted from the program as they cause too much lag in the game, however you may enable it if need be
 """
 # Barrier specifications
-BARRIER_WIDTH = 12
-BARRIER_HEIGHT = 12
-# Place of the groups of barriers
-BARRIER_GROUP_X = [width/8 - ((BARRIER_WIDTH * 4)/2),width/2 - ((BARRIER_WIDTH * 4) + 50),width/2 + 50,width * (7/8) - ((BARRIER_WIDTH * 4)/2)]
-# Variables determing how many barriers to place
-NUM_ROWS_BARRIERS = 3
-NUM_COLUMNS_BARRIERS = 4 # A space after every 4 barriers
+
 """
 
 # Specifications of missiles
@@ -155,14 +134,6 @@ alien_clock = 0
 clock = pygame.time.Clock()
 #------------------------
 
-#-----Define colours-----
-BLACK = (0,0,0)
-WHITE = (255,255,255)
-RED = (255,0,0)
-GREEN = (0,255,0)
-BLUE = (0,0,255)
-#------------------------
-
 #----Define functions----
 # Reset the aliens
 def reset():
@@ -181,123 +152,10 @@ SCREEN = pygame.display.set_mode(WINDOW_SIZE)
 pygame.display.set_caption('Python Invaders: A Simplified Version of the Classic Space Invaders Arcade Game')
 #--------Classes--------
 # Open a class for all sprites
-class PlayerSprite(pygame.sprite.Sprite):
-    # Function to set the x,y, and sprite attributes more easily
-    def __init__(self,x,y): 
-        super(PlayerSprite,self).__init__()
-        self.bitmap = pygame.image.load(PLAYER_SPRITE).convert()
-        self.bitmap.set_colorkey(BLACK)
-        # Physical image of the player on screen
-        self.image = pygame.Surface([PLAYER_WIDTH,PLAYER_HEIGHT])
-        # A rectangle representing an approximation of the sprite's image
-        self.rect = self.image.get_rect()
-        # x coordinate of player
-        self.rect.x = x
-        # y coordinate of player
-        self.rect.y = y
-    # Function to render the sprite before being placed on the screen
-    def render(self):
-        SCREEN.blit(self.bitmap,[self.rect.x,self.rect.y])
-
-class Alien(pygame.sprite.Sprite):
-    def __init__(self,x,y,row,column):
-        # global variables used in this function
-        global ALIEN_POINTS,SPRITES,ALIEN_WIDTH,ALIEN_HEIGHT
-        super(Alien,self).__init__() # It is necessary to call the parent class so that it may be added to a group
-        # The row the alien is in
-        self.row = row
-        # The column the alien is in, this is used to determine if the alien should shoot or not
-        self.column = column
-        # The amount of points the player gets for destroying the alien
-        self.score = ALIEN_POINTS[row]
-        # The alien's sprite image
-        self.bitmap = pygame.image.load(SPRITES[row]).convert()
-        # The physical image of the alien that the sprite takes up on the screen
-        self.image = pygame.Surface([ALIEN_WIDTH[self.row],ALIEN_HEIGHT])
-        # A rectangle representing an approximation of the sprite's image
-        self.rect = self.image.get_rect()
-        # x coordinate of the rectangle
-        self.rect.x = x
-        # y coordinate of the rectangle
-        self.rect.y = y
-
-    def render(self):
-        # Make the background of the sprite image file transparent
-        self.bitmap.set_colorkey(BLACK)
-        # Render the alien on the screen
-        SCREEN.blit(self.bitmap,self.rect)
-
-class Missile(pygame.sprite.Sprite):
-    def __init__(self,x,y,sprite,width,height,*random_num): # random_num is used for the alien missiles to determine which sprite the missile will have
-        super(Missile,self).__init__()
-        if random_num:
-            self.random_num = random_num[0]
-        # The missile's sprite image
-        self.sprite = sprite
-        self.bitmap = pygame.image.load(self.sprite).convert()
-        # The physical image of the missile that the sprite takes up on the screen
-        self.image = pygame.Surface([width,height])
-        # A rectangle representing an approximation of the sprite's image
-        self.rect = self.image.get_rect()
-        # x coordinate of the rectangle
-        self.rect.x = x
-        # y coordinate of the rectangle
-        self.rect.y = y
-
-    def update(self):
-        # Shift the missile upwards
-        global PLAYER_MISSILE_SPEED
-        self.rect.y -= PLAYER_MISSILE_SPEED
-
-    def render(self):
-        # Make the background of the missile image transparent
-        self.bitmap.set_colorkey(BLACK)
-        # Render the missile on the screen
-        SCREEN.blit(self.bitmap,self.rect)
-        
-class UFO(pygame.sprite.Sprite):
-    # Class for the UFO
-    def __init__(self,x,y,score):
-        super(UFO,self).__init__() # It is necessary to call the parent class so that it may be added to a group
-        # The physical image of the ufo that the sprite takes up on the screen
-        self.image = pygame.Surface([UFO_WIDTH,UFO_HEIGHT])
-        # A rectangle representing an approximation of the sprite's image
-        self.rect = self.image.get_rect()
-        # x coordinate of the ufo
-        self.rect.x = x
-        # y coordinate of ufo
-        self.rect.y = y
-        # Score the player is awarded for destroying the ufo
-        self.score = score
-        # Bitmap image of the ufo
-        self.bitmap = pygame.image.load(UFO_SPRITE).convert()
-
-    def render(self):
-        # Render the ufo on the screen
-        SCREEN.blit(self.bitmap,self.rect)
 
 # As stated above, the barriers cause a lot of lag from all of them being rendered at the same time
 """
-class Barrier(pygame.sprite.Sprite):
-    # Class for the barrier
-    def __init__(self,x,y):
-        super(Barrier,self).__init__()
-        # Image of sprite on screen
-        self.image = pygame.Surface([BARRIER_WIDTH,BARRIER_HEIGHT])
-        # Rectangle representing an approximation of the sprite's image
-        self.rect = self.image.get_rect()
-        # x coord of rect
-        self.rect.x = x
-        # y coord of rect
-        self.rect.y = y
-        # Stage of damager barrier is in (default is 0)
-        self.stage = 0
 
-    def render(self):
-        # Reset the bitmap image, if the barrier's stage has changed
-        self.bitmap = pygame.image.load(BARRIER_SPRITES[self.stage]).convert()
-        # Draw the barrier
-        SCREEN.blit(self.bitmap,self.rect)
 """
 #------------------------
 
@@ -323,6 +181,10 @@ for barrier_group in BARRIER_GROUP_X:
             barrier_x += BARRIER_WIDTH
         current_barrier_row += 1
 """
+# Temp area for refactoring
+ufo = UFO.UFO(-UFO.UFO.UFO_WIDTH, Y_OFFSET - 40)
+# Temp area for refactoring
+
 #-------|Main loop|-------
 while not done:
     #---------------------|All event processing below here|---------------------
@@ -437,27 +299,10 @@ while not done:
 
 
     ##########################--|UFO Code below here|--#########################
-    # If the isn't already a ufo on the screen
-    if not ufo_spawned:
-        # Random chance for the alien to spawn
-        random_ufo_chance = random.randint(1,180)
-        if random_ufo_chance == 180:
-            # Choose a score for the player to be awarded for destroying the ufo
-            ufo_score = random.randrange(0,5) # This will be used a list index and as lists start at 0, so does this
-            # Define the ufo object
-            ufo = UFO(ufo_start_x,Y_OFFSET - 40,UFO_POINTS[ufo_score])
-            # Place the ufo in a group
-            ufo.add(ufo_list)
-            #ufo.render()
-            ufo_spawned = True
-
-    if ufo_spawned:
-        ufo.rect.x += ufo_speed
-        if ufo.rect.x <= (0 - UFO_WIDTH) or ufo.rect.x >= width:
-            ufo_start_x = ufo.rect.x
-            ufo_speed = ufo_speed * -1
-            del ufo
-            ufo_spawned = False
+	if ufo.IsSpawned():
+		ufo.MoveForward()
+	else:
+		ufo.TrySpawn()
     ##########################--|UFO Code above here|--#########################
             
 
@@ -521,7 +366,7 @@ while not done:
         game_over_text = large_font.render('GAME OVER',False,WHITE)
         SCREEN.blit(game_over_text,[width/2 - 100,height/2])
         done = True
-    if ufo_spawned:
+    if ufo.IsSpawned():
         ufo.render()
     ##############--|Score and life counter header below here|--################
     # Header separating line
