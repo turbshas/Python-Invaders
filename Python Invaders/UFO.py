@@ -1,50 +1,50 @@
 import Alien
 import Entity
 import enum
-import random
+import os
 import pygame
+import random
+
+UFO_POINTS = [50,100,150,200,250,300]
+UFO_SPRITE = os.path.join('python invaders images','ufo.png')
+UFO_WIDTH = 48
+UFO_HEIGHT = 21
+UFO_SPEED = 1
 
 class SpawnSide(enum.Enum):
 	LEFT = 0
 	RIGHT = 1
 
-class UFO(Entity.Entity):
-    UFO_POINTS = [50,100,150,200,250,300]
-	UFO_SPRITE = os.path.join('python invaders images','ufo.png')
-	UFO_WIDTH = 48
-	UFO_HEIGHT = 21
-	UFO_SPEED = 1
-	
-    def __init__(self,x,y):
-        super(UFO,self).__init__(x, y)
+class UFO(Entity.Entity):	
+	def __init__(self,x,y):
+		bitmap = pygame.image.load(UFO_SPRITE).convert()
+		surface = pygame.Surface([UFO_WIDTH,UFO_HEIGHT])
+		super(UFO,self).__init__(x, y, bitmap, surface)
 		
-        self.bitmap = pygame.image.load(UFO_SPRITE).convert()
-        self.surface = pygame.Surface([UFO_WIDTH,UFO_HEIGHT])
-        self.rect = self.surface.get_rect()
-        
-        self.score = UFO_POINTS[random.randrange(0,5)]
-		self.spawned = False
-		self.spawnSide = SpawnSide.LEFT
+		self._score = UFO_POINTS[random.randrange(0,5)]
+		self._spawned = False
+		self._spawnSide = SpawnSide.LEFT
 		
-	def MoveForward(self, screen):
-		self.rect.x += self.spawnSide.value * (-1) * UFO_SPEED
-		if not (-UFO_WIDTH < self.rect.x and <= screen.get_surface().get_rect().width):
-			self.spawned = False
-			self.spawnSide = not self.spawnSide
+	def Move(self):
+		self.rect.x += self._spawnSide.value * (-1) * UFO_SPEED
 		
 	def IsSpawned(self):
-		return self.spawned
+		return self._spawned
 		
 	def TrySpawn(self):
 		if random.randint(1,180) == 180:
-			self.spawned = True
+			self._spawned = True
 			return True
 		return False
 		
+	def Hide(self):
+		self._spawned = False
+		self._spawnSide = not self._spawnSide
+		
 	def Destroy(self, screen):
-		self.spawned = False
-		if self.spawnSide == SpawnSide.LEFT:
-			self.rect.x = 0 - UFO_WIDTH
+		self._spawned = False
+		if self._spawnSide == SpawnSide.LEFT:
+			self.rect.x = screen.get_rect().right - UFO_WIDTH
 		else:
-			selft.rect.x = screen.get_surface().get_rect().width
+			self.rect.x = screen.get_rect().right
 			

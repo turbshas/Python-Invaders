@@ -1,4 +1,4 @@
-'''
+﻿'''
 Trevor Urbshas
 Kevin Reid
 ICS 3U Space Invaders
@@ -11,6 +11,7 @@ This program is a remake of Space Invaders rewritten in Python for the culminati
 import Alien
 import Colours
 import Entity
+import GameState
 import Missile
 import os
 import PlayerEntity
@@ -49,393 +50,315 @@ column8 = []
 column9 = []
 column10 = []
 column11 = []
-column_list = [column1,column2,column3,column4,column5,column6,column7,column8,column9,column10,column11]
+columns = [column1,column2,column3,column4,column5,column6,column7,column8,column9,column10,column11]
 
-# List of point values for each row
 # List that will be used to contain aliens that have been hit by a missile
 alien_hit = []
 #------------------------
 
 #----Define variables----
-    # Maybe add the option to change resolution later?
-    #in original, enemies are in rows of 11 and of 5 height
-RESOLUTION_LIST = [(640,360),(1024,576),(1280,720),(1366,768),(1600,900),(1920,1080)]
-width = 640 # this is left lowercase because I may add the option to change the resolution of the screen
+width = 640
 height = 480
-WINDOW_SIZE = (width,height)
-FPS = 60 # How many times the game updates per second
+GAME_STATE = GameState.GameState(width, height)
+
+# General State
+GAME_STATE.move_aliens = False
+GAME_STATE.shift_aliens_down = False
+GAME_STATE.sort_shooting_aliens = True
+GAME_STATE.reset_screen = True
+GAME_STATE.done = False
 
 # UFO Specifications
-ufo_start_x = 0 - UFO.UFO_WIDTH # This will place the ufo offscreen at the beginning and will start the ufo on the side it left
+GAME_STATE.ufo_start_x = 0 - UFO.UFO_WIDTH # This will place the ufo offscreen at the beginning and will start the ufo on the side it left
 
-# Specifications of aliens
-current_sprites = Alien.SPRITES # Determines which sprite is currently being used for the aliens
-# How fast the aliens will move, in pixels per second
-alien_x_change = 10
-# Same for y coordinate
-alien_y_shift = 0
-alien_y_change = 16 # 16 is the height of the aliens
+# Alien Specifications
+GAME_STATE.current_alien_sprites = Alien.AlienSpriteType.NORMAL # Determines which sprite is currently being used for the aliens
+GAME_STATE.alien_x_speed = 10
+GAME_STATE.alien_y_speed = Alien.ALIEN_HEIGHT
+
+# Player Specifications
+GAME_STATE.player_x_speed = 0
+GAME_STATE.player_lives = 3
+GAME_STATE.score = 0
+
+# Missile Specification
+GAME_STATE.current_alien_missile_sprites = Missile.MissileSpriteType.NORMAL
+# Empty list to be able to add and delete the player_missile object
+player_missile_list = [] #TODO
+GAME_STATE.shoot_player_missile = False
 
 # Offset amount is used so aliens start in the middle of the screen
-X_OFFSET = (width - ((ALIEN_MAX_WIDTH * NUM_ALIENS) + (ALIEN_SPACING * (NUM_ALIENS - 1)))) / 2
-Y_OFFSET = (height - ((ALIEN_HEIGHT * NUM_ROWS) + (ALIEN_SPACING * (NUM_ROWS - 1)))) / 4
+X_OFFSET = (width - ((Alien.ALIEN_MAX_WIDTH * Alien.NUM_ALIENS) + (Alien.ALIEN_SPACING * (Alien.NUM_ALIENS - 1)))) / 2
+Y_OFFSET = (height - ((Alien.ALIEN_HEIGHT * Alien.NUM_ROWS) + (Alien.ALIEN_SPACING * (Alien.NUM_ROWS - 1)))) / 4
 
-# Player specifications
-player_x_change = 0 # How fast/which direction the player sprite moves. Default is 0, value changes when the user presses a key
-player_lives = 3
-# Variables used to determine how fast/ where a player character should be moving
-player_x_change1 = 0
-player_x_change2 = 0
-# Variable holding score
-score = 0
 
-# The barriers have been omitted from the program as they cause too much lag in the game, however you may enable it if need be
-"""
-# Barrier specifications
-
-"""
-
-# Specifications of missiles
-PLAYER_MISSILE_SPRITE = os.path.join('python invaders images','player_missile.png')
-PLAYER_MISSILE_WIDTH = 4
-PLAYER_MISSILE_HEIGHT = 12
-PLAYER_MISSILE_SPEED = 8
-ALIEN_MISSILE_WIDTH = 12
-ALIEN_MISSILE_HEIGHT = 25 # 25 is the height of the largest missile
-SLOW_MISSILE_SPEED = 4 # The speed of the type 1 alien missiles
-FAST_MISSILE_SPEED = 6 # The speed of the type 2 alien missiles
-alien_current_missile_sprites = ALIEN_MISSILE_SPRITES_A # The default sprite list for the alien missiles
-# Empty list to be able to add and delete the player_missile object
-player_missile_list = []
-shoot_missile = False # This determines when to shoot a missile from the player sprite
 
 # Font sizes
 font = pygame.font.Font(None,25)
 large_font = pygame.font.Font(None,45)
 
-# Text printed on the screen if the player loses
-GAME_OVER_TEXT = 'GAME OVER'
 # y coordinate of green header line and header text
 HEADER_TEXT_Y = 4
 HEADER_LINE_Y = Y_OFFSET - 55
-# Variables to determine if the aliens have already been shifted or not
-has_shifted = False
-# Variable to determine whether to move the aliens downwards or not
-shift_downwards = False
-# Variable to determine when to sort the aliens to determine which ones can shoot
-sort_shooting_aliens = True
-# Variable to determine when to reset the aliens
-reboot = True
-# Variable used to end the main program loop when the user clicks the exit button
-done = False
-# Start a counter to make the aliens move every second
-alien_clock = 0
-# Used to manage how fast the screen updates
-clock = pygame.time.Clock()
 #------------------------
-
-#----Define functions----
-# Reset the aliens
-def reset():
-    # This function will reset the variables as well as the position of the aliens and place them in the middle of the screen
-    # These variables must be declared global
-    global alien_x_change,alien_y_shift,alien_y_change,alien_clock,reboot
-    alien_x_change = 10
-    alien_y_shift = 0
-    alien_y_change = 16
-    alien_clock = 0
-    reboot = True
-#-----------------------
-# Open the window
-SCREEN = pygame.display.set_mode(WINDOW_SIZE)
-# Window title
-pygame.display.set_caption('Python Invaders: A Simplified Version of the Classic Space Invaders Arcade Game')
-#--------Classes--------
-# Open a class for all sprites
-
-# As stated above, the barriers cause a lot of lag from all of them being rendered at the same time
-"""
-
-"""
-#------------------------
-
 #------Define Groups-----
-alien_list = pygame.sprite.Group() # This group holds all the aliens
-can_shoot_list = pygame.sprite.Group() # This group holds all the aliens that can shoot at the player i.e. the aliens with the highest y coordinate
-alien_missile_list = pygame.sprite.Group() # This group holds all the alien missiles
-ufo_list = pygame.sprite.GroupSingle() # This group will hold the ufo when it is on the screen. It will be used to check collision between it and the missile
-player_sprite_group = pygame.sprite.GroupSingle() # This group will be used to check for collisions
-barrier_list = pygame.sprite.Group() # This group will hold a list of the barriers on the screen
+aliens = pygame.sprite.Group()
+can_shoot_list = pygame.sprite.Group()
+alien_missiles = pygame.sprite.Group()
+ufos = pygame.sprite.GroupSingle()
+player = pygame.sprite.GroupSingle()
+barriers = pygame.sprite.Group()
 #------------------------
-reset()
+#----Define functions----
+def Reset(game_state):
+	game_state.alien_x_speed = 10
+	game_state.alien_y_speed = Alien.ALIEN_HEIGHT
+	game_state.reset_screen = True
+	game_state.ResetState()
+	
+def RedrawScreen(game_state, aliens, columns, player):
+	alien_y_shift = 0
+	
+	for row_number in range(Alien.NUM_ROWS):
+		alien_x_pos = X_OFFSET
+		alien_y_pos = Y_OFFSET + alien_y_shift
+		
+		for column_number in range(Alien.NUM_ALIENS):
+			alien = Alien.Alien(alien_x_pos, \
+								alien_y_pos, \
+								row_number, \
+								column_number, \
+								game_state.current_alien_sprites)
+			alien.add(aliens)
+			columns[column_number].append(alien)
+			alien_x_pos += Alien.ALIEN_MAX_WIDTH + Alien.ALIEN_SPACING
+			
+		alien_y_shift += Alien.ALIEN_HEIGHT + Alien.ALIEN_SPACING
+		
+	player_sprite = PlayerEntity.PlayerSprite(width/2 - PlayerEntity.PLAYER_WIDTH/2, \
+											  height - PlayerEntity.PLAYER_HEIGHT)
+	player_sprite.add(player)
+	
+def FlashPlayerSprite(screen, player_sprite):
+	for i in range(4):
+		pygame.draw.rect(screen, Colours.BLACK, player_sprite.GetRect())
+		pygame.display.flip()
+		time.sleep(0.5)
+		player_sprite.Render(screen)
+		pygame.display.flip()
+		time.sleep(0.5)
+#-----------------------
+GAME_STATE.StartGame()
+
+Reset(GAME_STATE)
+#------------------------
+
 # The barriers were disbled because of lag issues
 """
 # Place the barriers, this will only run at the beginning of the program
 for barrier_group in BARRIER_GROUP_X:
-    current_barrier_row = 0
-    for row_number in range(NUM_ROWS_BARRIERS):
-        barrier_x = barrier_group
-        barrier_y = height * (3/4) + (BARRIER_HEIGHT * current_barrier_row)
-        for column_number in range(NUM_COLUMNS_BARRIERS):
-            Barrier(barrier_x,barrier_y).add(barrier_list)
-            barrier_x += BARRIER_WIDTH
-        current_barrier_row += 1
+	current_barrier_row = 0
+	for row_number in range(NUM_ROWS_BARRIERS):
+		barrier_x = barrier_group
+		barrier_y = height * (3/4) + (BARRIER_HEIGHT * current_barrier_row)
+		for column_number in range(NUM_COLUMNS_BARRIERS):
+			Barrier(barrier_x,barrier_y).add(barrier_list)
+			barrier_x += BARRIER_WIDTH
+		current_barrier_row += 1
 """
 # Temp area for refactoring
-ufo = UFO.UFO(-UFO.UFO.UFO_WIDTH, Y_OFFSET - 40)
+ufo = UFO.UFO(-UFO.UFO_WIDTH, Y_OFFSET - 40)
 # Temp area for refactoring
 
 #-------|Main loop|-------
-while not done:
-    #---------------------|All event processing below here|---------------------
-    for event in pygame.event.get(): # User did something
-        if event.type == pygame.QUIT: # If user clicked close
-            done = True # Flag that we are done so we exit this loop
-        # If the user pressed a key down
-        if event.type == pygame.KEYDOWN:
-            # If the player pushed down the left arrow key
-            if event.key == pygame.K_LEFT:
-                player_x_change1 = -5 # This variable will always be used for moving left and will always be negative
-            # If the player pushed down the right arrow key
-            if event.key == pygame.K_RIGHT:
-                player_x_change2 = 5 # This variable will always be used for moving right and will always be positive
-            # If the player pressed down the spacebar
-            if event.key == pygame.K_SPACE:
-                shoot_missile = True
-        # If a user let a key up
-        if event.type == pygame.KEYUP:
-            if event.key == pygame.K_LEFT:
-                player_x_change1 = 0
-            if event.key == pygame.K_RIGHT:
-                player_x_change2 = 0
-    #---------------------|All event processing above here|---------------------
+while not GAME_STATE.done:
+	# Process events
+	GAME_STATE.ProcessEvents(pygame.event.get())
+
+	#------------------------|All game logic below here|------------------------
+	#########################--|Alien Code below here|--########################
+	GAME_STATE.TickAlienClock()
+
+	if GAME_STATE.reset_screen:
+		GAME_STATE.reset_screen = False
+		RedrawScreen(GAME_STATE, aliens, columns, player)
+
+	# Sort the aliens at the bottom of the alien_list group and determine which ones can shoot
+	if GAME_STATE.sort_shooting_aliens:
+		GAME_STATE.sort_shooting_aliens = False
+		for column in columns:
+			if len(column) > 0:
+				column[len(column) - 1].add(can_shoot_list)
+		
+	# Reverse the aliens' direction of travel and shift them downwards if the reach either end of the screen
+	if GAME_STATE.RunAlienEvents():
+		for alien in aliens:
+			if alien.AtBounds(GAME_STATE.GetScreen()):
+				if GAME_STATE.move_aliens:
+					GAME_STATE.shift_aliens_down = True
+					
+					for alien in can_shoot_list:
+						if alien.GetRect().y >= ((height - PlayerEntity.PLAYER_HEIGHT) + 20):
+							GAME_STATE.GameOver()
+							GAME_STATE.done = True
+				else:
+					GAME_STATE.alien_x_speed = GAME_STATE.alien_x_speed * -1
+					GAME_STATE.move_aliens = True
+				break
+		# Switch sprites
+		if GAME_STATE.current_alien_sprites == Alien.AlienSpriteType.NORMAL:
+			GAME_STATE.current_alien_sprites = Alien.AlienSpriteType.ALTERNATE
+		else:
+			GAME_STATE.current_alien_sprites = Alien.AlienSpriteType.NORMAL
+
+	# Random chance for the aliens in can_shoot_list to shoot
+	for alien in can_shoot_list:
+		alien_shoot_number = random.randint(1, Alien.ALIEN_SHOOT_CHANCE)
+		if alien_shoot_number == Alien.ALIEN_SHOOT_CHANCE:
+			rand_num = random.randint(0,1)
+			missile_type = Missile.MissileType.SLOW if rand_num == 0 else Missile.MissileType.FAST
+			missile = Missile.Missile(alien.GetRect().x + (Alien.ALIEN_WIDTH[alien.row]/2), \
+									  alien.GetRect().y + Alien.ALIEN_HEIGHT, \
+									  missile_type, \
+									  GAME_STATE.current_alien_missile_sprites)
+			missile.add(alien_missiles)
+
+	# Determine if the alien missile has hit the player
+	player_hit = pygame.sprite.spritecollide(player.sprite, alien_missiles, False)
+	if len(player_hit) > 0:
+		for missile in player_hit:
+			missile.kill()
+			del missile
+		GAME_STATE.player_lives -= 1
+		FlashPlayerSprite(GAME_STATE.GetScreen(), player.sprite)
+	
+	if GAME_STATE.AlienClockIsEven():
+		if GAME_STATE.current_alien_missile_sprites == Missile.MissileSpriteType.NORMAL:
+			GAME_STATE.current_alien_missile_sprites = Missile.MissileSpriteType.ALTERNATE
+		else:
+			GAME_STATE.current_alien_missile_sprites = Missile.MissileSpriteType.NORMAL
+	#########################--|Alien Code above here|--########################
 
 
-    #------------------------|All game logic below here|------------------------
-    #########################--|Alien Code below here|--########################
-    alien_clock += 1
-
-    # Only execute this code if it is the first time the program boots up or if the player wins the round
-    if reboot:
-        # Give the aiens a position in a list
-        for row_number in range(NUM_ROWS):
-            alien_x_pos = X_OFFSET # x coordinate of alien on the far left
-            alien_y_pos = Y_OFFSET + alien_y_shift # y coordinate of row
-            for column_number in range(NUM_ALIENS):
-                # Create an alien object
-                current_alien = Alien(alien_x_pos,alien_y_pos,row_number,column_number)
-                # Add the alien to a list of aliens
-                current_alien.add(alien_list)
-                # Add the alien to its column position in a list
-                column_list[column_number].append(current_alien)
-                alien_x_pos += ALIEN_FAKE_WIDTH + ALIEN_SPACING
-            alien_y_shift += ALIEN_HEIGHT + ALIEN_SPACING
-        # Create the player sprite
-        player_sprite = PlayerSprite(width/2 - PLAYER_WIDTH/2,height - PLAYER_HEIGHT)
-        #player_sprite.add(player_sprite_group)
-        reboot = False
-
-    # Sort the aliens at the bottom of the alien_list group and determine which ones can shoot
-    if sort_shooting_aliens:
-        for column in column_list:
-            if len(column) > 0: # If there is an alien in the selected column
-                column[len(column) - 1].add(can_shoot_list) # Add the alien in the very last position of the column to the can_shoot_list
-        sort_shooting_aliens = False # Make sure the program does not sort the aliens every tick
-        
-    # Reverse the aliens' direction of travel and shift them downwards if the reach either end of the screen
-    if alien_clock >= (FPS/2 - 1):
-        for alien in alien_list:
-            # If the last alien on the right reaches the right side of the screen
-            # If the first alien on the left reaches the left side of the screen
-            if alien.rect.x >= (width - (ALIEN_FAKE_WIDTH + 20)) or alien.rect.x <= 20:
-                if not has_shifted: # Only execute this if the aliens have not been shifted downwards already
-                    shift_downwards = True # Shift downwards
-                    # Check if the aliens have reached the bottom of the screen
-                    for alien in alien_list:
-                        # If the aliens touch the bottom of the screen
-                        if alien.rect.y >= ((height - PLAYER_HEIGHT) + 20):
-                            SCREEN.blit(GAME_OVER_TEXT,[width/2 - len(GAME_OVER_TEXT)/2,height/2])
-                else:
-                    alien_x_change = alien_x_change * -1 # Reverse direction
-                    has_shifted = False
-                break # Break the loop so that the direction of travel is not reversed  and aliens are not shifted downwards multiple times 
-        # Switch sprites every time the aliens move
-        if current_sprites == SPRITES:
-            current_sprites = ALTERNATE_SPRITES
-        else:
-            current_sprites = SPRITES
-
-    # Random chance for the aliens in can_shoot_list to shoot
-    for alien in can_shoot_list:
-        alien_shoot_number = random.randint(1,ALIEN_SHOOT_CHANCE)
-        if alien_shoot_number == ALIEN_SHOOT_CHANCE: # This means the aliens have a 1/ALIEN_SHOOT_CHANCE chance to shoot
-            rand_num = random.randint(0,1) # Choose a random number between 0 and 1, this will be used to determine which sprite it will use
-            temp_missile_variable = Missile(alien.rect.x + (ALIEN_WIDTH[alien.row]/2),alien.rect.y + ALIEN_HEIGHT,alien_current_missile_sprites[rand_num],ALIEN_MISSILE_WIDTH,ALIEN_MISSILE_HEIGHT,rand_num)
-            temp_missile_variable.add(alien_missile_list)
-
-    # Determine if the alien missile has hit the player
-    player_hit = pygame.sprite.spritecollide(player_sprite,alien_missile_list,False)
-    if len(player_hit) > 0:
-        for missile in player_hit: # A player could be hit by 2 missile at the same time
-            missile.kill() # Delete all the missiles in the list
-            del missile
-        player_lives -= 1 # Subtract a life from the player
-        counter = 0 # Start a counter to determine how many times to flash the player sprite
-        while counter < 3: # Do this 3 times
-            pygame.draw.rect(SCREEN,BLACK,player_sprite.rect) # Cover the player sprite with a black rectangle
-            pygame.display.flip() # Flip image to the display
-            time.sleep(0.5) # Wait half a second
-            player_sprite.render() # Draw the player sprite over the black rectangle
-            pygame.display.flip() # Flip image to the display
-            time.sleep(0.5) # Wait a half second
-            counter +=1 # Add 1 to the counter
-    
-    if alien_clock % 2 == 0: # Change the alien missile sprite every 2 ticks
-        if alien_current_missile_sprites == ALIEN_MISSILE_SPRITES_A:
-            alien_current_missile_sprites = ALIEN_MISSILE_SPRITES_B
-        else:
-            alien_current_missile_sprites = ALIEN_MISSILE_SPRITES_A
-    #########################--|Alien Code above here|--########################
-
-
-    ##########################--|UFO Code below here|--#########################
+	##########################--|UFO Code below here|--#########################
 	if ufo.IsSpawned():
-		ufo.MoveForward()
+		ufo.Move()
 	else:
 		ufo.TrySpawn()
-    ##########################--|UFO Code above here|--#########################
-            
+	##########################--|UFO Code above here|--#########################
+			
 
-    #########################--|Player Code below here|--#######################
-    # If the player is within 5 pixels of the left side of the screen
-    if player_sprite.rect.x <= player_x_change1 * -1 and player_sprite.rect.x >= player_x_change1:
-        # Stop the player from moving left
-        player_x_change1 = 0
-    # If the player is within 5 pixels of the right side of the screen
-    elif player_sprite.rect.x <= (width - PLAYER_WIDTH) + player_x_change2 and player_sprite.rect.x >= (width - PLAYER_WIDTH) - player_x_change2:
-        # Stop the player from moving right
-        player_x_change2 = 0
-    # Move the player by adding the two x change values to the player sprite's x value
-    player_sprite.rect.x += player_x_change1 + player_x_change2
-    
-    # If the player pressed down the spacebar and if there is not already a missile on the screen
-    if shoot_missile and len(player_missile_list) < 1:
-            # Create the missile object and place it in the list
-            player_missile_object = Missile(player_sprite.rect.x + ((PLAYER_WIDTH/2) - (PLAYER_MISSILE_WIDTH/2)),player_sprite.rect.y - PLAYER_MISSILE_HEIGHT,PLAYER_MISSILE_SPRITE,PLAYER_MISSILE_WIDTH,PLAYER_MISSILE_HEIGHT,0)
-            player_missile_list.append(player_missile_object)
+	#########################--|Player Code below here|--#######################
+	if not player.sprite.AtLeftBound(GAME_STATE.GetScreen()) \
+			and not player.sprite.AtRightBound(GAME_STATE.GetScreen()) \
+		or (player.sprite.AtLeftBound(GAME_STATE.GetScreen()) and GAME_STATE.player_x_speed > 0) \
+		or (player.sprite.AtRightBound(GAME_STATE.GetScreen()) and GAME_STATE.player_x_speed < 0):
+		player.sprite.speed = GAME_STATE.player_x_speed
+		player.sprite.Move()
 
-    # Check if the player's missile collided with an alien
-    if len(player_missile_list) == 1:
-        # The missile collides with anything
-        alien_hit = pygame.sprite.spritecollide(player_missile_list[0],alien_list,False) # The False value indicates that if any sprites do collide, it will not remove them from their groups
-        if len(alien_hit) > 0:
-            # Increase the score value
-            score += alien_hit[0].score
-            # Remove the missile from the screen
-            del player_missile_list[0]
-            # Remove the alien from the screen
-            alien_hit[0].kill()
-            # Remove the alien from the list of columns, so it cannot shoot again
-            del column_list[alien_hit[0].column][alien_hit[0].row]
-            for row_number in range(len(column_list[alien_hit[0].column])): # Adjust the row attribute of the aliens in the column
-                column_list[alien_hit[0].column][row_number].row = row_number
-            sort_shooting_aliens = True # Recalculate which aliens can shoot
-            shoot_missile = False # Tell the program that the missile is now gone
-            # If there are no aliens left on the screen, redraw them
-            if len(alien_list) < 1:
-                reset()
-                player_lives += 1
-        # Check if the player's missile collided with the ufo
-        elif pygame.sprite.spritecollide(player_missile_list[0],ufo_list,False):
-            # Create a variable to access the attributes of the ufo and delete it
-            ufo_hit = pygame.sprite.spritecollide(player_missile_list[0],ufo_list,False)
-            score += ufo_hit[0].score # Increase the player's score
-            del player_missile_list[0] # Delete the missile
-            shoot_missile = False
-            sort_shooting_aliens = True # Recalculate which aliens can shoot
-            del ufo_hit # Delete the ufo
-            ufo_spawned = False
-    #######################--|Player Code above here|--#########################
-    #------------------------|All game logic above here|------------------------
+	if GAME_STATE.shoot_player_missile and len(player_missile_list) < 1:
+			player_missile_object = Missile.Missile(player.sprite.GetRect().center[0] - (Missile.PLAYER_MISSILE_WIDTH/2), \
+													player.sprite.GetRect().top - Missile.PLAYER_MISSILE_HEIGHT, \
+													Missile.MissileType.PLAYER, \
+													Missile.MissileSpriteType.NORMAL)
+			player_missile_list.append(player_missile_object)
+	
+	collision = False
+	if len(player_missile_list) >= 1:
+		aliens_hit = pygame.sprite.spritecollide(player_missile_list[0], aliens, False)
+		ufos_hit = pygame.sprite.spritecollide(player_missile_list[0], ufos, False)
+		
+		for alien in aliens_hit:
+			collision = True
+			GAME_STATE.score += alien.score
+			alien.kill()
+			del columns[alien.column][alien.row]
+			
+			for row_number in range(len(columns[alien.column])):
+				columns[alien.column][row_number].row = row_number
+				
+			GAME_STATE.sort_shooting_aliens = True
+			GAME_STATE.shoot_player_missile = False
+			if len(aliens) < 1:
+				Reset(GAME_STATE)
+				GAME_STATE.player_lives += 1
+				
+		for ufo in ufos_hit:
+			GAME_STATE.score += ufo.score
+			GAME_STATE.shoot_player_missile = False
+			GAME_STATE.sort_shooting_aliens = True
+			ufo.Destroy()
+			
+	if collision:
+		del player_missile_list[0]
+	#######################--|Player Code above here|--#########################
+	#------------------------|All game logic above here|------------------------
 
 
-    #-----------------------|All code to draw below here|-----------------------
-    # Clear the screen before objects are drawn
-    SCREEN.fill(BLACK)
-    if player_lives == 0:
-        game_over_text = large_font.render('GAME OVER',False,WHITE)
-        SCREEN.blit(game_over_text,[width/2 - 100,height/2])
-        done = True
-    if ufo.IsSpawned():
-        ufo.render()
-    ##############--|Score and life counter header below here|--################
-    # Header separating line
-    pygame.draw.line(SCREEN,GREEN,[0,HEADER_LINE_Y],[width,HEADER_LINE_Y],3)
-    # Variable holding the score text
-    score_text = large_font.render('SCORE   ' + str(score),False,WHITE) # False means the text is not antialiased
-    SCREEN.blit(score_text,[10,HEADER_TEXT_Y])
-    lives_text = large_font.render('LIVES   ' + str(player_lives),False,WHITE)
-    SCREEN.blit(lives_text,[width - ((PLAYER_WIDTH * 4) + (ALIEN_SPACING * 3) + 30),HEADER_TEXT_Y])
-    
-    # If the player pressed down the spacebar
-    if shoot_missile:
-        # Render the missile on screen and move it upwards
-        player_missile_list[0].render()
-        player_missile_list[0].update()
-        # If the missile is at the top of the screen
-        if player_missile_object.rect.y < HEADER_LINE_Y:
-            # Delete the missile from the list, thus allowing another missile to be fired
-            del player_missile_list[0]
-            shoot_missile = False
+	#-----------------------|All code to draw below here|-----------------------
+	# Clear the screen before objects are drawn
+	GAME_STATE.GetScreen().fill(Colours.BLACK)
+	if GAME_STATE.player_lives == 0:
+		GAME_STATE.GameOver()
+		GAME_STATE.done = True
+	if ufo.IsSpawned():
+		ufo.Render(GAME_STATE.GetScreen())
+	##############--|Score and life counter header below here|--################
+	# Header separating line
+	pygame.draw.line(GAME_STATE.GetScreen(), Colours.GREEN, [0, HEADER_LINE_Y], [width, HEADER_LINE_Y], 3)
+	# Variable holding the score text
+	score_text = large_font.render('SCORE   ' + str(GAME_STATE.score), False, Colours.WHITE)
+	GAME_STATE.GetScreen().blit(score_text, [10, HEADER_TEXT_Y])
+	lives_text = large_font.render('LIVES   ' + str(GAME_STATE.player_lives), False, Colours.WHITE)
+	GAME_STATE.GetScreen().blit(lives_text, [width - ((PlayerEntity.PLAYER_WIDTH * 4) + (Alien.ALIEN_SPACING * 3) + 30), HEADER_TEXT_Y])
+	
+	if GAME_STATE.shoot_player_missile:
+		if player_missile_object.IsOffScreen(GAME_STATE.GetScreen()):
+			del player_missile_list[0]
+			GAME_STATE.shoot_player_missile = False
+		else:
+			player_missile_list[0].Render(GAME_STATE.GetScreen())
+			player_missile_list[0].Move()
 
-    # Render the player on the screen
-    player_sprite.render()
+	# Render the player on the screen
+	player.sprite.Render(GAME_STATE.GetScreen())
 
-    # Barriers disabled for lag reasons
-    """
-    # Render the barriers on screen
-    for barrier in barrier_list:
-        barrier.render()
-    """
-    # Render and animate the aliens
-    for alien in alien_list:
-        alien.render()
-        if alien_clock >= (FPS/2 -1): # If it has been a half second since the last time they moved
-            if shift_downwards: # Move the aliens downward if necessary
-                alien.rect.y += alien_y_change # Shift the aliens downwards
-                has_shifted = True
-            else:
-                alien.rect.x += alien_x_change # Shift the aliens
-            # Switch the sprites
-            alien.bitmap = pygame.image.load(current_sprites[alien.row]).convert()
+	# Barriers disabled for lag reasons
+	"""
+	# Render the barriers on screen
+	for barrier in barrier_list:
+		barrier.render()
+	"""
+	# Render and animate the aliens
+	for alien in aliens:
+		alien.Render(GAME_STATE.GetScreen())
+		if GAME_STATE.RunAlienEvents():
+			if GAME_STATE.shift_aliens_down:
+				alien.GetRect().y += GAME_STATE.alien_y_speed
+				GAME_STATE.move_aliens = False
+			else:
+				alien.GetRect().x += GAME_STATE.alien_x_speed
+			alien.UpdateSprite(GAME_STATE.current_alien_sprites)
 
-    # Draw the missiles in the alien_missile_list
-    for missile in alien_missile_list:
-        missile.render()
-        # If the missile is of type 1, it travels slower
-        if missile.sprite == ALIEN_MISSILE_SPRITES_A[0] or missile.sprite == ALIEN_MISSILE_SPRITES_B[0]:
-            missile.rect.y += SLOW_MISSILE_SPEED
-        # If the missile is not of type 1(therefore it is type 2 because there are only 2 types), it travels faster
-        else:
-            missile.rect.y += FAST_MISSILE_SPEED
-        missile.bitmap = pygame.image.load(alien_current_missile_sprites[missile.random_num]).convert()
-        if missile.rect.y == height:
-            missile.kill()
-            del missile
+	# Draw the missiles in the alien_missiles
+	for missile in alien_missiles:
+		if missile.IsOffScreen(GAME_STATE.GetScreen()):
+			missile.kill()
+			del missile
+		else:
+			missile.Move()
+			missile.UpdateSprite(GAME_STATE.current_alien_missile_sprites)
+			missile.Render(GAME_STATE.GetScreen())
 
-    pygame.display.flip()
-    #-----------------------|All code to draw above here|-----------------------
-    # Reset the clocks and variables
-    if alien_clock >= (FPS/2 - 1):
-        alien_clock = 0 # The clock must be reset at the end of the frame so that it does not affect the drawing of the aliens
-    if shift_downwards: # Tell the program not to shift the aliens down
-        shift_downwards = False
-    # Limit to 60 frames per second
-    clock.tick(FPS)
+	pygame.display.flip()
+	#-----------------------|All code to draw above here|-----------------------
+	if GAME_STATE.shift_aliens_down:
+		GAME_STATE.shift_aliens_down = False
+	GAME_STATE.TickClock()
 
 # Print a game over message in the Python shell
 print("""You have run out of lives, the game will now end.
-You scored""",score,"""points!
+You scored""", GAME_STATE.score, """points!
 Restart the game to play again!""")
 
 pygame.quit()
