@@ -16,23 +16,23 @@ class SpawnSide(enum.Enum):
     RIGHT = 1
 
 class UFO(Entity.Entity):    
-    def __init__(self,x,y):
+    def __init__(self, x, y):
         bitmap = pygame.image.load(UFO_SPRITE).convert()
         super(UFO,self).__init__(x, y, bitmap)
         
-        self._score = UFO_POINTS[random.randrange(0,5)]
         self._spawned = False
         self._spawnSide = SpawnSide.LEFT
         
     def Move(self):
-        self.rect.x += self._spawnSide.value * (-1) * UFO_SPEED
+        self.new_rect = self.rect.move(UFO_SPEED if self._spawnSide == SpawnSide.LEFT else -UFO_SPEED, 0)
         
-    def IsSpawned(self):
+    def IsSpawned(self) -> bool:
         return self._spawned
         
-    def TrySpawn(self):
-        if random.randint(1,180) == 180:
+    def TrySpawn(self) -> bool:
+        if random.randint(1, 600) == 600:
             self._spawned = True
+            self.score = UFO_POINTS[random.randrange(0,5)]
             return True
         return False
         
@@ -43,7 +43,7 @@ class UFO(Entity.Entity):
     def Destroy(self, screen):
         self._spawned = False
         if self._spawnSide == SpawnSide.LEFT:
-            self.rect.x = screen.get_rect().right - UFO_WIDTH
+            self.new_rect.x = screen.get_rect().left - UFO_WIDTH
         else:
-            self.rect.x = screen.get_rect().right
+            self.new_rect.x = screen.get_rect().right
             

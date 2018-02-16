@@ -49,25 +49,32 @@ class MissileSpriteType(enum.Enum):
     ALTERNATE = 1
 
 class Missile(Entity.Entity):
-    def __init__(self, x, y, missile_type, missile_sprite_type):
-        sprite = MISSILE_SPRITES[missile_type.value][missile_sprite_type.value]
-        super(Missile, self).__init__(x, y, pygame.image.load(sprite).convert())
-        
+    def __init__(self, x, y, missile_type):
         self._missile_type = missile_type
-        self._sprite_type = missile_sprite_type
+        self._sprite_type = MissileSpriteType.NORMAL
+
+        sprite = MISSILE_SPRITES[self._missile_type.value][self._sprite_type.value]
+        super(Missile, self).__init__(x, y, pygame.image.load(sprite).convert())        
 
     def Move(self):
         # Shift the missile upwards
         if self._missile_type == MissileType.PLAYER:
-            self.rect.y -= PLAYER_MISSILE_SPEED
+            self.new_rect = self.rect.move(0, -PLAYER_MISSILE_SPEED)
         else:
             if self._missile_type == MissileType.SLOW:
-                self.rect.y += SLOW_MISSILE_SPEED
+                self.new_rect = self.rect.move(0, SLOW_MISSILE_SPEED)
             else:
-                self.rect.y += FAST_MISSILE_SPEED
+                self.new_rect = self.rect.move(0, FAST_MISSILE_SPEED)
     
-    def UpdateSprite(self, missile_sprite_type):
-        self._sprite_type = missile_sprite_type
+    def ToggleSprite(self):
+        if self._missile_type == MissileType.PLAYER:
+            return
+        
+        if self._sprite_type == MissileSpriteType.NORMAL:
+            self._sprite_type = MissileSpriteType.ALTERNATE
+        else:
+            self._sprite_type = MissileSpriteType.NORMAL
+
         sprite = MISSILE_SPRITES[self._missile_type.value][self._sprite_type.value]
         self._bitmap = pygame.image.load(sprite).convert()
         

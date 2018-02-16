@@ -27,6 +27,9 @@
     <Compile Include="Source\Colours.py" />
     <Compile Include="Source\Entity.py" />
     <Compile Include="Source\GameState.py" />
+    <Compile Include="Source\Header.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Source\Missile.py" />
     <Compile Include="Source\PlayerEntity.py" />
     <Compile Include="Source\UFO.py" />
